@@ -25,21 +25,21 @@ def select_diverse_subset(probe_list, k, probes_per_asn = math.inf):
     """
 
     print("Selecting", k, "probes for diversity...this may take a while.")
-    for probe in probe_list:
-        #Ignores probes that do not have our selection criteria (e.g. software probes)
-        if probe['asn_v4'] is None or probe["geometry"] is None: 
-            probe_list.remove(probe)
+    probes = [probe for probe in probe_list if probe['geometry'] is not None]
+    if len(probes) < len(probe_list):
+        print("Alert: some probes coordinates are not known (or are software probes). These will not be chosen.")
 
-    selected = [probe_list[0]] #Arbitrarily selects first probe to start. 
+    selected = [probes[0]] #Arbitrarily selects first probe to start. 
     asn_counts = Counter({selected[0]['asn_v4']: 1}) #Counts occurences of ASNs we selected. 
     #asn_v4 and asn_v6 for the same probe are rarely different, so for simplicity only asn_v4 is considered. 
-    probes = probe_list[1:] 
+    probes = probes[1:] 
     
     while len(selected) < k and len(probes) > 0: #Selects probes one at a time, based on diversity, until k have been chosen.
         #Considers only probes which obey ASN constraint
         probes = [probe for probe in probes if asn_counts[probe['asn_v4']] < probes_per_asn] 
         select = next_diverse_selection(probes, selected) 
         selected.append(select)
+        key = select['asn_v4'] if select['asn_v4'] is not None else "unknown"
         asn_counts[select['asn_v4']] += 1
         probes.remove(select) 
         
