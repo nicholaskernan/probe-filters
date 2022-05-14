@@ -51,7 +51,7 @@ def next_diverse_selection(probes, selected):
     where even its closest neighbor is as distant as possible.
     """
     
-    max_min_dist = 0
+    max_min_dist = -1 
     best_probe = None
     for probe in probes:
         min_dist = math.inf
