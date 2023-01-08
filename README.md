@@ -13,7 +13,7 @@ Then, we use our algorithm to select the 100 most geographically diverse probes 
 
 ## Algorithm
 
-Below is the algorithm for selecting the k most geographically diverse probes from a set of n probes. It is a greedy process that would runs O(nk<sup>2</sup>) time, and tends to find a good solution (though it may not be optimal). 
+Below is the algorithm for selecting the k most geographically diverse probes from a set of n probes. It is a greedy process that would runs O(nk) time, and tends to find a good solution (though it may not be optimal). 
 
 The first probe is selected arbitrarily. Then repeat the following steps until all k probes are chosen:
 1. For each probe not yet selected, find its nearest neighbor out of probes that have already been selected. 

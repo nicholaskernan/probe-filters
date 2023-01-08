@@ -1,7 +1,7 @@
 """Functions for filtering a group of probes to enforce geographic diversity or ASN diversity."""
 
 from ripe.atlas.cousteau import Probe, ProbeRequest
-from collections import Counter
+from collections import Counter, defaultdict
 import math
 
 def select_diverse_subset(probe_list, k, probes_per_asn = math.inf):
@@ -33,11 +33,12 @@ def select_diverse_subset(probe_list, k, probes_per_asn = math.inf):
     asn_counts = Counter({selected[0]['asn_v4']: 1}) #Counts occurences of ASNs we selected. 
     #asn_v4 and asn_v6 for the same probe are rarely different, so for simplicity only asn_v4 is considered. 
     probes = probes[1:] 
+    nearest_neighbors = defaultdict(lambda: math.inf)
     
     while len(selected) < k and len(probes) > 0: #Selects probes one at a time, based on diversity, until k have been chosen.
         #Considers only probes which obey ASN constraint
         probes = [probe for probe in probes if asn_counts[probe['asn_v4']] < probes_per_asn] 
-        select = next_diverse_selection(probes, selected) 
+        select, nearest_neighbors = next_diverse_selection(probes, selected, nearest_neighbors) 
         selected.append(select)
         key = select['asn_v4'] if select['asn_v4'] is not None else "unknown"
         asn_counts[select['asn_v4']] += 1
@@ -45,7 +46,7 @@ def select_diverse_subset(probe_list, k, probes_per_asn = math.inf):
         
     return selected  
 
-def next_diverse_selection(probes, selected):
+def next_diverse_selection(probes, selected, nearest_neighbors):
     """Selects the next probe to maximize geographic diversity from the already selected.
     This is done using the maximum of minimum distances. In other words, we choose the probe
     where even its closest neighbor is as distant as possible.
@@ -54,15 +55,15 @@ def next_diverse_selection(probes, selected):
     max_min_dist = -1 
     best_probe = None
     for probe in probes:
-        min_dist = math.inf
-        for select in selected: 
-            dist = great_circle_distance(probe, select) 
-            if dist < min_dist:
-                min_dist = dist
-        if(min_dist > max_min_dist): 
-            max_min_dist = min_dist
+        probe_id = probe["id"]
+        
+        nearest_neighbors[probe_id] = min(nearest_neighbors[probe_id], great_circle_distance(probe, selected[-1]))
+        
+        if(nearest_neighbors[probe_id] > max_min_dist): 
+            max_min_dist = nearest_neighbors[probe_id]
             best_probe = probe
-    return best_probe   
+    
+    return best_probe, nearest_neighbors
 
 def great_circle_distance(probe1, probe2):
     """Returns the spherical distance between two probes, using their latitude and longtidue values."""
